@@ -1,241 +1,161 @@
-/* 두썸띵 My recording Orbit — 나선형 궤도
-   바닥 평면: My planet을 중심으로 4축 (x: Grow + / Care -, y: Output + / Input -)
-   기록은 Input → Grow → Output → Care 반시계로 돌며, 한 바퀴마다 조금씩 위로 올라간다(꾸준함). */
+/* 두썸띵 My recording Orbit — 엇갈린 두 궤도와 별 위성
+   두 궤도는 살짝 기울어진 고리. 아래쪽(가까운 쪽)은 진하게, 위쪽(먼 쪽)은 옅게.
+   다홍 별 두 개가 각자의 궤도를 반시계로 돈다. 속도는 저마다 천천히 변해서,
+   가끔은 같은 속도로 나란히 돌기도 한다. */
 (function () {
   var svg = document.getElementById('orbit');
-  var fig = document.getElementById('orbit-fig');
-  if (!svg || !fig) return;
+  if (!svg) return;
 
   var NS = 'http://www.w3.org/2000/svg';
-  var DEG = Math.PI / 180;
-
-  // 장면 설정
-  var CX = 230, CY = 452, D = 1400;        // 바닥 중심의 화면 위치, 원근 거리
-  var R = 114;                             // 나선 반지름
-  var A0 = -90, A1 = -90 + 360 * 2;        // Input 앞에서 시작해 2바퀴
-  var H = 318;                             // 나선 전체 높이
-  var AXIS_UP = 372;                       // 세로축 길이
-  var GROUND = 158;                        // 바닥 축 길이(반)
-  var TILT = 73 * DEG;                     // 바닥 평면 기울기 (클수록 옆에서 봄)
-  var YAW0 = -14 * DEG;                    // 기본 회전
-  var CLIMB = 16;                          // 다홍 점이 끝까지 오르는 시간(초)
+  var DEG = Math.PI / 180, TAU = Math.PI * 2;
+  var CX = 230, CY = 300;
 
   var reduce = false;
   try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 
-  var yaw = YAW0, drag = 0;
-
-  function P(x, y, h) {
-    var c = Math.cos(yaw), s = Math.sin(yaw);
-    var xr = x * c - y * s, yr = x * s + y * c;
-    var ct = Math.cos(TILT), st = Math.sin(TILT);
-    var up = yr * ct + h * st;
-    var z = yr * st - h * ct;               // + 먼 쪽
-    var k = D / (D + z);
-    return { x: CX + xr * k, y: CY - up * k, z: z, k: k };
-  }
-  function helix(a) {                       // a: 각도(도)
-    var t = (a - A0) / (A1 - A0);
-    return P(R * Math.cos(a * DEG), R * Math.sin(a * DEG), 18 + H * t);
+  // 궤도: 반지름(rx, ry), 기울기(rot)
+  var orbits = [
+    { rx: 150, ry: 282, rot: -7 },     // 세로로 긴 궤도
+    { rx: 278, ry: 150, rot: -47 }     // 비스듬히 누운 궤도
+  ];
+  orbits.forEach(function (o) {
+    o.c = Math.cos(o.rot * DEG); o.s = Math.sin(o.rot * DEG);
+  });
+  function at(o, t) {                  // t: 라디안. sin t > 0 쪽이 화면 아래 = 가까운 쪽
+    var x = o.rx * Math.cos(t), y = o.ry * Math.sin(t);
+    return { x: CX + x * o.c - y * o.s, y: CY + x * o.s + y * o.c, depth: Math.sin(t) };
   }
   function f1(n) { return n.toFixed(1); }
-  function pt(cmd, p) { return cmd + f1(p.x) + ' ' + f1(p.y); }
 
-  var layers = {};
-  ['back', 'axis', 'front', 'top'].forEach(function (k) {
-    layers[k] = document.createElementNS(NS, 'g');
-    svg.appendChild(layers[k]);
-  });
   function el(name, attrs, parent) {
     var n = document.createElementNS(NS, name);
     for (var k in attrs) n.setAttribute(k, attrs[k]);
-    parent.appendChild(n);
+    if (parent) parent.appendChild(n);
     return n;
   }
 
-  // 바닥
-  var ground = el('path', { 'class': 'g-line' }, layers.back);
-  var groundLabels = [
-    { t: 'grow', v: [1, 0] }, { t: 'output', v: [0, 1] },
-    { t: 'care', v: [-1, 0] }, { t: 'input', v: [0, -1] }
-  ].map(function (g) { g.node = el('text', { 'class': 'lab-en' }, layers.back); g.node.textContent = g.t; return g; });
-  var shadow = el('path', { 'class': 'shadow' }, layers.back);
+  var defs = el('defs', {}, svg);
+  var gLines = el('g', {}, svg);
+  var gLabels = el('g', {}, svg);
+  var gStars = el('g', {}, svg);
 
-  // 나선: 먼 쪽 / 가까운 쪽을 따로 그려 세로축을 사이에 끼운다
-  var helixBack = el('path', { 'class': 'helix back' }, layers.back);
-  var helixFront = el('path', { 'class': 'helix' }, layers.front);
-  var chevBack = el('path', { 'class': 'chev back' }, layers.back);
-  var chevFront = el('path', { 'class': 'chev' }, layers.front);
-
-  // 세로축
-  var vAxis = el('path', { 'class': 'v-axis' }, layers.axis);
-  var ticks = el('path', { 'class': 'tick' }, layers.axis);
-  var vLabel = el('text', { 'class': 'lab-en', 'text-anchor': 'middle' }, layers.axis);
-  vLabel.textContent = 'keep orbiting';
-
-  // 행성
-  var planet = el('g', {}, layers.axis);
-  el('ellipse', { 'class': 'planet', rx: 40, ry: 22 }, planet);
-  el('text', { 'class': 'planet-t', y: 0.5 }, planet).textContent = 'My planet';
-
-  // 궤도 위 기록 지점 (첫 바퀴의 사분면 + 끝점)
-  var nodes = [
-    // 궤도의 양 옆 가장자리(앞뒤 깊이 0)에 번갈아 놓아 겹치지 않게
-    { a: 14, lines: ['목표 / 설계'] },
-    { a: 194, lines: ['실행 / 변화 / 성장'] },
-    { a: 374, lines: ['생각 정리', '셀프 리뷰 / 피드백'] },
-    { a: 554, lines: ['기억 / 배움'] },
-    { a: A1, lines: [] }
-  ].map(function (n) {
-    n.dot = el('circle', { 'class': 'node', r: 2.6 }, layers.top);
-    n.text = el('text', { 'class': 'lab-ko' }, layers.top);
-    n.lines.forEach(function (l, i) {
-      el('tspan', { x: 0, dy: i ? 15 : 0 }, n.text).textContent = l;
-    });
-    return n;
-  });
-
-  var trail = el('path', { 'class': 'sat-trail' }, layers.top);
-  var sat = el('circle', { 'class': 'sat', r: 5 }, layers.top);
-
-  var CHEVS = [100, 280, 460];      // 화살표 자리(각도)
-
-  function chevron(a) {
-    var p = helix(a), q = helix(a + 2), b = helix(a - 2);
-    var dx = q.x - b.x, dy = q.y - b.y, L = Math.hypot(dx, dy) || 1;
-    dx /= L; dy /= L;
-    var s = 6.5, w = 4.2;
-    var bx = p.x - dx * s, by = p.y - dy * s;
-    return { z: p.z, d: 'M' + f1(bx - dy * w) + ' ' + f1(by + dx * w) + pt('L', p) + 'L' + f1(bx + dy * w) + ' ' + f1(by - dx * w) };
-  }
-
-  var satT = reduce ? 0.12 : 0;
-
-  function draw() {
-    // 바닥 십자
-    var gd = '';
-    [[1, 0], [0, 1]].forEach(function (v) {
-      gd += pt('M', P(-v[0] * GROUND, -v[1] * GROUND, 0)) + pt('L', P(v[0] * GROUND, v[1] * GROUND, 0));
-    });
-    ground.setAttribute('d', gd);
-    groundLabels.forEach(function (g) {
-      var p = P(g.v[0] * (GROUND + 12), g.v[1] * (GROUND + 12), 0);
-      var mid = Math.abs(p.x - CX) < 40;       // 세로축 근처면 축 옆으로 비켜 쓴다
-      g.node.setAttribute('x', f1(mid ? p.x + 7 : p.x));
-      g.node.setAttribute('y', f1(mid && p.z > 0 ? p.y - 4 : p.y + 4));
-      g.node.setAttribute('text-anchor', mid || p.x > CX ? 'start' : 'end');
-    });
-
-    // 행성 그림자(바닥에 비친 원)
-    var sd = '';
-    for (var i = 0; i <= 36; i++) {
-      var aa = i * 10 * DEG;
-      sd += pt(i ? 'L' : 'M', P(46 * Math.cos(aa), 46 * Math.sin(aa), 0));
+  // 두 궤도가 엇갈리는 자리: 먼 쪽 궤도 선을 살짝 끊어 앞뒤를 보여 준다
+  function crossings() {
+    var a = orbits[0], b = orbits[1], out = [];
+    function inside(o, p) {             // 궤도 o 안쪽이면 < 1
+      var dx = p.x - CX, dy = p.y - CY;
+      var x = dx * o.c + dy * o.s, y = -dx * o.s + dy * o.c;
+      return (x * x) / (o.rx * o.rx) + (y * y) / (o.ry * o.ry) - 1;
     }
-    shadow.setAttribute('d', sd + 'Z');
-
-    // 나선
-    var back = '', front = '', prev = null, prevFront = null;
-    for (var a = A0; a <= A1 + 0.01; a += 3) {
-      var p = helix(a);
-      if (prev) {
-        var isFront = (prev.z + p.z) / 2 < 0;
-        if (isFront !== prevFront) {
-          if (isFront) front += pt('M', prev); else back += pt('M', prev);
+    var N = 1440, prev = inside(b, at(a, 0));
+    for (var i = 1; i <= N; i++) {
+      var t = i / N * TAU, v = inside(b, at(a, t));
+      if ((prev < 0) !== (v < 0)) {
+        var p = at(a, t);
+        // b 위에서 같은 점의 각도 찾기
+        var best = 0, bd = 1e9;
+        for (var j = 0; j < N; j++) {
+          var q = at(b, j / N * TAU), d = Math.hypot(q.x - p.x, q.y - p.y);
+          if (d < bd) { bd = d; best = j / N * TAU; }
         }
-        if (isFront) front += pt('L', p); else back += pt('L', p);
-        prevFront = isFront;
+        out.push({ p: p, da: p.depth, db: at(b, best).depth });
       }
-      prev = p;
+      prev = v;
     }
-    helixBack.setAttribute('d', back);
-    helixFront.setAttribute('d', front);
+    return out;
+  }
+  var X = crossings();
 
-    var cb = '', cf = '';
-    CHEVS.forEach(function (ca) { var c = chevron(ca); if (c.z < 0) cf += c.d; else cb += c.d; });
-    chevBack.setAttribute('d', cb);
-    chevFront.setAttribute('d', cf);
-
-    // 세로축 + 눈금
-    var base = P(0, 0, 0), top = P(0, 0, AXIS_UP);
-    vAxis.setAttribute('d', pt('M', base) + pt('L', top)
-      + 'M' + f1(top.x - 4) + ' ' + f1(top.y + 7) + pt('L', top) + 'L' + f1(top.x + 4) + ' ' + f1(top.y + 7));
-    var td = '';
-    for (var h = 50; h < AXIS_UP - 10; h += 25) {
-      var tp = P(0, 0, h);
-      td += pt('M', tp) + 'L' + f1(tp.x + 4) + ' ' + f1(tp.y);
-    }
-    ticks.setAttribute('d', td);
-    vLabel.setAttribute('x', f1(top.x));
-    vLabel.setAttribute('y', f1(top.y - 10));
-
-    var pc = P(0, 0, 22);
-    planet.setAttribute('transform', 'translate(' + f1(pc.x) + ' ' + f1(pc.y) + ')');
-
-    // 기록 지점
-    nodes.forEach(function (n) {
-      var q = helix(n.a);
-      n.dot.setAttribute('cx', f1(q.x));
-      n.dot.setAttribute('cy', f1(q.y));
-      var right = q.x >= CX;
-      n.text.setAttribute('text-anchor', right ? 'start' : 'end');
-      var tx = q.x + (right ? 9 : -9), ty = q.y + 4 - (n.lines.length - 1) * 7.5;
-      n.text.setAttribute('transform', 'translate(' + f1(tx) + ' ' + f1(ty) + ')');
-      var o = q.z > 0 ? 0.55 : 1;
-      n.text.setAttribute('opacity', o);
-      n.dot.setAttribute('opacity', o);
+  // 궤도마다 마스크: 엇갈림 틈 + 별이 지나가는 자리 틈
+  orbits.forEach(function (o, i) {
+    var m = el('mask', { id: 'm' + i, maskUnits: 'userSpaceOnUse', x: -200, y: -200, width: 860, height: 1000 }, defs);
+    el('rect', { x: -200, y: -200, width: 860, height: 1000, fill: '#fff' }, m);
+    X.forEach(function (c) {
+      var mine = i === 0 ? c.da : c.db, other = i === 0 ? c.db : c.da;
+      if (mine < other) el('circle', { cx: f1(c.p.x), cy: f1(c.p.y), r: 6, fill: '#000' }, m);
     });
+    o.holes = [el('circle', { r: 0, fill: '#000' }, m), el('circle', { r: 0, fill: '#000' }, m)];
+    o.mask = m;
+  });
 
-    // 다홍 점: 나선을 따라 아래에서 위로
-    var sa = A0 + (A1 - A0) * Math.min(1, satT);
-    var s = helix(sa);
-    sat.setAttribute('cx', f1(s.x));
-    sat.setAttribute('cy', f1(s.y));
-    sat.setAttribute('opacity', s.z > 0 ? 0.75 : 1);
-    var tr = '', from = Math.max(A0, sa - 40);
-    for (var b = from; b <= sa; b += 2) tr += pt(b === from ? 'M' : 'L', helix(b));
-    trail.setAttribute('d', tr);
+  // 궤도 선: 띠로 나눠 가까운 쪽은 진하게, 먼 쪽은 옅게
+  orbits.forEach(function (o, i) {
+    var g = el('g', { mask: 'url(#m' + i + ')', 'class': 'orbit-line' }, gLines);
+    var BANDS = 36, STEP = 6;
+    for (var k = 0; k < BANDS; k++) {
+      var t0 = k / BANDS * TAU, d = '';
+      for (var s = 0; s <= STEP; s++) {
+        var p = at(o, t0 + TAU / BANDS * s / STEP);
+        d += (s ? 'L' : 'M') + f1(p.x) + ' ' + f1(p.y);
+      }
+      var mid = Math.sin(t0 + TAU / BANDS / 2);
+      el('path', { d: d, opacity: (0.4 + 0.6 * (mid + 1) / 2).toFixed(2) }, g);
+    }
+  });
+
+  // 원래 맵의 네 방향을 궤도 끝에 작게
+  function label(text, x, y, anchor) {
+    var n = el('text', { 'class': 'lab-en', x: f1(x), y: f1(y), 'text-anchor': anchor || 'middle' }, gLabels);
+    n.textContent = text;
+  }
+  (function () {
+    var a = orbits[0], b = orbits[1];
+    var top = at(a, -Math.PI / 2), bot = at(a, Math.PI / 2);
+    label('output', top.x - 4, top.y - 10);
+    label('input', bot.x + 4, bot.y + 20);
+    var g = at(b, 0), c = at(b, Math.PI);
+    var ux = b.c, uy = b.s;                            // 누운 궤도의 긴 축 방향
+    label('grow', g.x + ux * 10, g.y + uy * 10, 'start');
+    label('care', c.x - ux * 10, c.y - uy * 10 + 9, 'end');
+  })();
+
+  // 별: 8갈래
+  function starPath(R, r) {
+    var d = '';
+    for (var i = 0; i < 16; i++) {
+      var a = i * TAU / 16 - Math.PI / 2, L = i % 2 ? r : R;
+      d += (i ? 'L' : 'M') + f1(Math.cos(a) * L) + ' ' + f1(Math.sin(a) * L);
+    }
+    return d + 'Z';
+  }
+  var BIG = starPath(14, 5.2), SMALL = starPath(8.5, 3.4);
+
+  var sats = [
+    { o: 0, t: -2.2, base: TAU / 26, amp: 0.45, per: 37, ph: 0 },
+    { o: 1, t: 1.1, base: TAU / 31, amp: 0.4, per: 23, ph: 2.1 }
+  ].map(function (s) {
+    s.big = el('path', { d: BIG, 'class': 'star' }, gStars);
+    s.small = el('path', { d: SMALL, 'class': 'star-small' }, gStars);
+    return s;
+  });
+
+  function place(s) {
+    var o = orbits[s.o];
+    var p = at(o, s.t), q = at(o, s.t + 0.42);         // 작은 별은 조금 뒤에서 따라온다
+    var k = 0.78 + 0.32 * (p.depth + 1) / 2;            // 가까울수록 크게
+    var kq = 0.78 + 0.32 * (q.depth + 1) / 2;
+    s.big.setAttribute('transform', 'translate(' + f1(p.x) + ' ' + f1(p.y) + ') scale(' + k.toFixed(3) + ')');
+    s.small.setAttribute('transform', 'translate(' + f1(q.x) + ' ' + f1(q.y) + ') scale(' + kq.toFixed(3) + ')');
+    s.big.setAttribute('opacity', (0.72 + 0.28 * (p.depth + 1) / 2).toFixed(2));
+    // 별이 지나가는 자리는 궤도 선을 비워 준다
+    o.holes[0].setAttribute('cx', f1(p.x)); o.holes[0].setAttribute('cy', f1(p.y)); o.holes[0].setAttribute('r', f1(17 * k));
+    o.holes[1].setAttribute('cx', f1(q.x)); o.holes[1].setAttribute('cy', f1(q.y)); o.holes[1].setAttribute('r', f1(11 * kq));
   }
 
-  // 손가락·마우스로 옆으로 끌면 나선이 돈다
-  var dragging = false, lastX = 0;
-  fig.addEventListener('pointerdown', function (e) {
-    dragging = true; lastX = e.clientX;
-    fig.classList.add('dragging');
-    try { fig.setPointerCapture(e.pointerId); } catch (err) {}
-  });
-  fig.addEventListener('pointermove', function (e) {
-    if (!dragging) return;
-    drag += (e.clientX - lastX) * 0.5 * DEG;
-    lastX = e.clientX;
-    if (reduce) { yaw = YAW0 + drag; draw(); }
-  });
-  function release() {
-    if (!dragging) return;
-    dragging = false;
-    fig.classList.remove('dragging');
+  function speed(s, clock) {                            // 저마다의 속도, 천천히 변한다
+    return s.base * (1 + s.amp * Math.sin(clock * TAU / s.per + s.ph));
   }
-  fig.addEventListener('pointerup', release);
-  fig.addEventListener('pointercancel', release);
 
-  if (reduce) { draw(); return; }
+  if (reduce) { sats.forEach(place); return; }
 
   var last = null, clock = 0;
   function frame(now) {
     if (last === null) last = now;
     var dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
-    clock += dt;
-
-    if (!dragging) drag *= Math.exp(-dt * 1.2);                        // 손을 떼면 천천히 제자리로
-    var tYaw = YAW0 + Math.sin(clock * 2 * Math.PI / 24) * 7 * DEG + drag;  // 아주 느리게 흔들림
-    yaw += (tYaw - yaw) * (1 - Math.exp(-dt * (dragging ? 20 : 4)));
-
-    satT += dt / CLIMB;
-    if (satT > 1.1) satT = 0;                                          // 끝에서 잠깐 머문 뒤 다시 처음부터
-    draw();
+    last = now; clock += dt;
+    sats.forEach(function (s) { s.t -= speed(s, clock) * dt; place(s); });   // 반시계
     requestAnimationFrame(frame);
   }
-  draw();
+  sats.forEach(place);
   requestAnimationFrame(frame);
 })();
