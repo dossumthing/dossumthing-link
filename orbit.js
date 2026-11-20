@@ -15,8 +15,8 @@
 
   // 궤도: 반지름(rx, ry), 기울기(rot)
   var orbits = [
-    { rx: 150, ry: 282, rot: -33 },    // output–input
-    { rx: 278, ry: 150, rot: -51 }     // 비스듬히 누운 궤도
+    { rx: 165, ry: 310, rot: -33 },    // output–input
+    { rx: 250, ry: 135, rot: -51 }     // 비스듬히 누운 궤도
   ];
   orbits.forEach(function (o) {
     o.c = Math.cos(o.rot * DEG); o.s = Math.sin(o.rot * DEG);
@@ -103,12 +103,13 @@
     var a = orbits[0], b = orbits[1];
     var top = at(a, -Math.PI / 2), bot = at(a, Math.PI / 2);
     var vx = -a.s, vy = a.c;                           // 세로 궤도의 긴 축 방향(아래쪽)
-    label('output', top.x - vx * 12, top.y - vy * 12, 'end');
-    label('input', bot.x + vx * 12, bot.y + vy * 12 + 9, 'start');
+    // 궤도 끝에서 긴 축 방향으로 일정하게 떨어뜨린다 (글자 기준선 보정 포함)
+    label('output', top.x - vx * 14 - 2, top.y - vy * 14, 'end');
+    label('input', bot.x + vx * 14 + 2, bot.y + vy * 14 + 9, 'start');
     var g = at(b, 0), c = at(b, Math.PI);
     var ux = b.c, uy = b.s;                            // 누운 궤도의 긴 축 방향
-    label('grow', g.x + ux * 10, g.y + uy * 10, 'start');
-    label('care', c.x - ux * 10, c.y - uy * 10 + 9, 'end');
+    label('grow', g.x + ux * 14 + 2, g.y + uy * 14, 'start');
+    label('care', c.x - ux * 14 - 2, c.y - uy * 14 + 9, 'end');
   })();
 
   // 별: 8갈래
@@ -151,14 +152,14 @@
   // 사분면 네 자리: 글 대신 작은 행성·별 (마우스를 올리면 원래 문구)
   // 각자 작은 원을 그리며 떠다니고, 모양마다 따로 움직인다.
   var decos = [
-    { x: 262, y: 22, q: '실행 / 변화 / 성장', kind: 'ring' },              // Output–Grow (위)
-    { x: 448, y: 318, q: '목표 / 설계', kind: 'pen' },                     // Grow–Input (오른쪽 바깥)
-    { x: 196, y: 590, q: '기억 / 배움', kind: 'note' },                    // Input–Care (아래)
-    { x: 14, y: 168, q: '생각 정리 · 셀프 리뷰 / 피드백', kind: 'star5' }  // Care–Output (왼쪽 바깥)
+    { x: 262, y: 20, q: '실행 / 변화 / 성장', kind: 'ring' },              // Output–Grow (위)
+    { x: 444, y: 270, q: '목표 / 설계', kind: 'pen' },                     // Grow–Input (오른쪽 바깥)
+    { x: 214, y: 590, q: '기억 / 배움', kind: 'note' },                    // Input–Care (아래)
+    { x: 18, y: 342, q: '생각 정리 · 셀프 리뷰 / 피드백', kind: 'star5' }  // Care–Output (왼쪽 바깥)
   ].map(function (d, i) {
     var g = el('g', {}, gDeco);
     el('title', {}, g).textContent = d.q;
-    el('circle', { r: 16, fill: 'transparent' }, g);                     // 마우스 올리기 쉽게
+    el('circle', { r: 18, fill: 'transparent' }, g);                     // 마우스 올리기 쉽게
     var inner = el('g', {}, g);
     if (d.kind === 'ring') {
       el('path', { d: 'M-13 1.5 A13 4 -14 0 0 13 -1.5', 'class': 'deco-line' }, inner);   // 뒤쪽 고리
@@ -188,7 +189,7 @@
     decos.forEach(function (d) {
       var w = clock * TAU / 9 + d.ph;                                   // 작은 원을 그리며 떠다님
       var x = d.x + Math.cos(w) * 4, y = d.y + Math.sin(w * 1.3) * 5;
-      d.g.setAttribute('transform', 'translate(' + f1(x) + ' ' + f1(y) + ')');
+      d.g.setAttribute('transform', 'translate(' + f1(x) + ' ' + f1(y) + ') scale(1.2)');   // 20% 크게
       if (d.kind === 'ring') {                                          // 고리 행성: 천천히 기울었다 돌아옴
         d.inner.setAttribute('transform', 'rotate(' + f1(Math.sin(clock * TAU / 6 + d.ph) * 16) + ')');
       } else if (d.kind === 'pen') {                                    // 펜: 끄적이듯 살짝 흔들림
