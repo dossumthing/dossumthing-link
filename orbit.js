@@ -15,7 +15,7 @@
 
   // 궤도: 반지름(rx, ry), 기울기(rot)
   var orbits = [
-    { rx: 140, ry: 222, rot: -72 },    // output–input: 거의 누웠지만 수평은 아니게
+    { rx: 150, ry: 282, rot: -33 },    // output–input
     { rx: 278, ry: 150, rot: -51 }     // 비스듬히 누운 궤도
   ];
   orbits.forEach(function (o) {
@@ -102,9 +102,9 @@
   (function () {
     var a = orbits[0], b = orbits[1];
     var top = at(a, -Math.PI / 2), bot = at(a, Math.PI / 2);
-    // 궤도 끝 바로 위·아래에 (화면 밖으로 나가지 않게)
-    label('output', top.x + 4, top.y - 14, top.x < CX ? 'start' : 'end');
-    label('input', bot.x - 4, bot.y + 22, bot.x < CX ? 'start' : 'end');
+    var vx = -a.s, vy = a.c;                           // 세로 궤도의 긴 축 방향(아래쪽)
+    label('output', top.x - vx * 12, top.y - vy * 12, 'end');
+    label('input', bot.x + vx * 12, bot.y + vy * 12 + 9, 'start');
     var g = at(b, 0), c = at(b, Math.PI);
     var ux = b.c, uy = b.s;                            // 누운 궤도의 긴 축 방향
     label('grow', g.x + ux * 10, g.y + uy * 10, 'start');
@@ -151,10 +151,10 @@
   // 사분면 네 자리: 글 대신 작은 행성·별 (마우스를 올리면 원래 문구)
   // 각자 작은 원을 그리며 떠다니고, 모양마다 따로 움직인다.
   var decos = [
-    { x: 214, y: 30, q: '실행 / 변화 / 성장', kind: 'ring' },              // Output–Grow (위)
-    { x: 444, y: 222, q: '목표 / 설계', kind: 'pen' },                     // Grow–Input (오른쪽 바깥)
-    { x: 262, y: 580, q: '기억 / 배움', kind: 'note' },                    // Input–Care (아래)
-    { x: 16, y: 392, q: '생각 정리 · 셀프 리뷰 / 피드백', kind: 'phase' }  // Care–Output (왼쪽 바깥)
+    { x: 262, y: 22, q: '실행 / 변화 / 성장', kind: 'ring' },              // Output–Grow (위)
+    { x: 448, y: 318, q: '목표 / 설계', kind: 'pen' },                     // Grow–Input (오른쪽 바깥)
+    { x: 196, y: 590, q: '기억 / 배움', kind: 'note' },                    // Input–Care (아래)
+    { x: 14, y: 168, q: '생각 정리 · 셀프 리뷰 / 피드백', kind: 'star5' }  // Care–Output (왼쪽 바깥)
   ].map(function (d, i) {
     var g = el('g', {}, gDeco);
     el('title', {}, g).textContent = d.q;
@@ -168,24 +168,22 @@
       el('path', { d: 'M-7.5 7.5L-6 2.8L4.2 -7.4L7.4 -4.2L-2.8 6Z', 'class': 'deco-line' }, inner);
       el('path', { d: 'M2 -5.2L5.2 -2M-6 2.8L-2.8 6', 'class': 'deco-line' }, inner);
       el('path', { d: 'M-7.5 7.5L-6.6 4.9L-4.9 6.6Z', 'class': 'deco-fill' }, inner);
-    } else if (d.kind === 'note') {                                      // 노트: 줄이 한 줄씩 써진다
-      el('rect', { x: -7, y: -9, width: 14, height: 18, rx: 1.5, 'class': 'deco-line' }, inner);
-      el('path', { d: 'M-4 -9V9', 'class': 'deco-line' }, inner);
-      d.lines = [-4, 0, 4].map(function (y) {
-        return el('path', { d: 'M-1.5 ' + y + 'H4.5', 'class': 'deco-line', 'stroke-dasharray': '6 6' }, inner);
-      });
-    } else {
-      el('circle', { r: 6.5, 'class': 'deco-line' }, inner);
-      d.shade = el('path', { 'class': 'deco-fill' }, inner);
+    } else if (d.kind === 'note') {                                      // 펼친 노트: 책장이 넘어간다
+      var PAGE = 'M0 -5.5Q5 -7.5 11 -5.8V6.2Q5 4.6 0 6.5Z';
+      var LINES = 'M2.5 -2.6Q5.5 -3.6 8.5 -2.9M2.5 0.4Q5.5 -0.6 8.5 0.1M2.5 3.4Q5.5 2.4 8.5 3.1';
+      el('path', { d: PAGE, 'class': 'deco-page', transform: 'scale(-1 1)' }, inner);   // 왼쪽 면
+      el('path', { d: LINES, 'class': 'deco-line', transform: 'scale(-1 1)' }, inner);
+      el('path', { d: PAGE, 'class': 'deco-page' }, inner);                            // 오른쪽 면
+      el('path', { d: LINES, 'class': 'deco-line' }, inner);
+      d.leaf = el('g', {}, inner);                                                     // 넘어가는 장
+      el('path', { d: PAGE, 'class': 'deco-page' }, d.leaf);
+      el('path', { d: LINES, 'class': 'deco-line' }, d.leaf);
+    } else {                                                             // 다섯 꼭짓점 별
+      el('path', { d: starPath(8.5, 3.6, 5), 'class': 'deco-line', 'stroke-linejoin': 'round' }, inner);
     }
     d.g = g; d.inner = inner; d.ph = i * 1.7;
     return d;
   });
-  function phasePath(f) {                    // f: 0→1→0 차오름. 오른쪽부터 차는 달 모양
-    var r = 6.5, k = Math.cos(f * Math.PI) * r;   // 경계선 타원의 가로 반지름(부호 = 방향)
-    return 'M0 ' + (-r) + ' A' + r + ' ' + r + ' 0 0 1 0 ' + r +
-      ' A' + f1(Math.abs(k)) + ' ' + r + ' 0 0 ' + (k > 0 ? 0 : 1) + ' 0 ' + (-r) + 'Z';
-  }
   function float(clock) {
     decos.forEach(function (d) {
       var w = clock * TAU / 9 + d.ph;                                   // 작은 원을 그리며 떠다님
@@ -196,15 +194,15 @@
       } else if (d.kind === 'pen') {                                    // 펜: 끄적이듯 살짝 흔들림
         var wob = Math.sin(clock * TAU / 1.6) * 7 + Math.sin(clock * TAU / 5) * 6;
         d.inner.setAttribute('transform', 'translate(' + f1(Math.sin(clock * TAU / 3.2) * 1.5) + ' 0) rotate(' + f1(wob) + ')');
-      } else if (d.kind === 'note') {                                   // 노트: 6초마다 세 줄을 차례로 쓴다
-        var c6 = (clock % 6) / 6 * 4;                                   // 0~3 쓰기, 3~4 잠깐 멈춤
-        d.lines.forEach(function (ln, j) {
-          var f = Math.max(0, Math.min(1, c6 - j));
-          ln.setAttribute('stroke-dashoffset', f1(6 - 6 * f));
-        });
-      } else {                                                          // 반쯤 찬 행성: 차고 기운다
-        var f = 0.5 + 0.42 * Math.sin(clock * TAU / 10);
-        d.shade.setAttribute('d', phasePath(f));
+      } else if (d.kind === 'note') {                                   // 3.5초마다 한 장씩 오른쪽→왼쪽으로 넘긴다
+        var u = Math.min(1, (clock % 3.5) / 1.1);
+        var e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;  // 부드럽게
+        var sx = Math.cos(e * Math.PI);                                 // 1 → -1 (책등 기준으로 뒤집힘)
+        var lift = Math.sin(e * Math.PI) * -1.6;                        // 넘길 때 살짝 들림
+        d.leaf.setAttribute('transform', 'translate(0 ' + f1(lift) + ') scale(' + sx.toFixed(3) + ' 1)');
+      } else {                                                          // 별: 천천히 돌며 반짝
+        var sc = 0.85 + 0.25 * (0.5 + 0.5 * Math.sin(clock * TAU / 2.8));
+        d.inner.setAttribute('transform', 'rotate(' + f1(clock * 18 % 360) + ') scale(' + sc.toFixed(3) + ')');
       }
     });
   }
