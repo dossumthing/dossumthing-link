@@ -15,8 +15,8 @@
 
   // 궤도: 반지름(rx, ry), 기울기(rot)
   var orbits = [
-    { rx: 150, ry: 282, rot: -7 },     // 세로로 긴 궤도
-    { rx: 278, ry: 150, rot: -47 }     // 비스듬히 누운 궤도
+    { rx: 150, ry: 282, rot: 9 },     // 세로로 긴 궤도
+    { rx: 278, ry: 150, rot: -51 }     // 비스듬히 누운 궤도
   ];
   orbits.forEach(function (o) {
     o.c = Math.cos(o.rot * DEG); o.s = Math.sin(o.rot * DEG);
@@ -110,15 +110,15 @@
   })();
 
   // 별: 8갈래
-  function starPath(R, r) {
+  function starPath(R, r, n) {                         // n갈래 별
     var d = '';
-    for (var i = 0; i < 16; i++) {
-      var a = i * TAU / 16 - Math.PI / 2, L = i % 2 ? r : R;
+    for (var i = 0; i < n * 2; i++) {
+      var a = i * Math.PI / n - Math.PI / 2, L = i % 2 ? r : R;
       d += (i ? 'L' : 'M') + f1(Math.cos(a) * L) + ' ' + f1(Math.sin(a) * L);
     }
     return d + 'Z';
   }
-  var BIG = starPath(14, 5.2), SMALL = starPath(8.5, 3.4);
+  var BIG = starPath(14, 5.2, 8), SMALL = starPath(9, 2.4, 4);
 
   var sats = [
     { o: 0, t: -2.2, base: TAU / 26, amp: 0.45, per: 37, ph: 0 },
@@ -131,7 +131,7 @@
 
   function place(s) {
     var o = orbits[s.o];
-    var p = at(o, s.t), q = at(o, s.t + 0.42);         // 작은 별은 조금 뒤에서 따라온다
+    var p = at(o, s.t), q = at(o, s.t + 0.95);         // 작은 별은 멀찍이 뒤에서 따라온다
     var k = 0.78 + 0.32 * (p.depth + 1) / 2;            // 가까울수록 크게
     var kq = 0.78 + 0.32 * (q.depth + 1) / 2;
     s.big.setAttribute('transform', 'translate(' + f1(p.x) + ' ' + f1(p.y) + ') scale(' + k.toFixed(3) + ')');
@@ -139,7 +139,7 @@
     s.big.setAttribute('opacity', (0.72 + 0.28 * (p.depth + 1) / 2).toFixed(2));
     // 별이 지나가는 자리는 궤도 선을 비워 준다
     o.holes[0].setAttribute('cx', f1(p.x)); o.holes[0].setAttribute('cy', f1(p.y)); o.holes[0].setAttribute('r', f1(17 * k));
-    o.holes[1].setAttribute('cx', f1(q.x)); o.holes[1].setAttribute('cy', f1(q.y)); o.holes[1].setAttribute('r', f1(11 * kq));
+    o.holes[1].setAttribute('cx', f1(q.x)); o.holes[1].setAttribute('cy', f1(q.y)); o.holes[1].setAttribute('r', f1(12 * kq));
   }
 
   function speed(s, clock) {                            // 저마다의 속도, 천천히 변한다
