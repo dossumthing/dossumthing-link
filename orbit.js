@@ -162,6 +162,10 @@
     el('circle', { r: 18, fill: 'transparent' }, g);                     // 마우스 올리기 쉽게
     var inner = el('g', {}, g);
     if (d.kind === 'ring') {
+      // 행성 위에 둥글게 'Touch' (누를 수 있다는 힌트)
+      el('path', { id: 'touch-arc', d: 'M-19 0A19 19 0 0 1 19 0', fill: 'none' }, g);
+      var tt = el('text', { 'class': 'touch' }, g);
+      el('textPath', { href: '#touch-arc', startOffset: '50%', 'text-anchor': 'middle' }, tt).textContent = 'Touch';
       el('path', { d: 'M-13 1.5 A13 4 -14 0 0 13 -1.5', 'class': 'deco-line' }, inner);   // 뒤쪽 고리
       el('circle', { r: 6.5, 'class': 'deco-fill' }, inner);
       el('path', { d: 'M-13 1.5 A13 4 -14 0 1 13 -1.5', 'class': 'deco-line' }, inner);   // 앞쪽 고리
@@ -215,9 +219,8 @@
   cap.setAttribute('role', 'status');
   cap.innerHTML = '<b></b><span></span>';
   stage.appendChild(cap);
-  function hideCap() { cap.classList.remove('show'); capFor = null; if (hint) hint.classList.remove('gone'); }
+  function hideCap() { cap.classList.remove('show'); capFor = null; }
   function showCap(d) {
-    dropHint();
     if (capFor === d && cap.classList.contains('show')) { hideCap(); return; }
     capFor = d;
     cap.firstChild.textContent = d.q;
@@ -234,19 +237,6 @@
   }
   document.addEventListener('click', hideCap);
 
-  // 고리 행성 옆에 '행성을 눌러보세요' 말풍선을 늘 띄워 둔다. 설명 상자가 열려 있는 동안만 잠깐 숨는다.
-  var hint = null;
-  {
-    var hd = decos[0];
-    hint = document.createElement('div');
-    hint.className = 'hint';
-    hint.textContent = '행성을 눌러보세요';
-    hint.style.left = ((hd.x + 22) / 460 * 100) + '%';
-    hint.style.top = (hd.y / 600 * 100) + '%';
-    stage.appendChild(hint);
-    hint.addEventListener('click', function (ev) { ev.stopPropagation(); showCap(hd); });
-  }
-  function dropHint() { if (hint) hint.classList.add('gone'); }
 
   if (reduce) { sats.forEach(place); return; }
 

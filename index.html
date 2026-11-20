@@ -106,24 +106,8 @@
     opacity: 0; pointer-events: none; transition: opacity .2s;
   }
   .cap.show { opacity: 1; }
-  .hint {
-    position: absolute; z-index: 2;
-    transform: translateY(-50%);
-    padding: 5px 9px; border: 1px solid var(--ink); border-radius: 12px;
-    background: var(--bg); color: var(--ink);
-    font-size: 11.5px; line-height: 1.3; white-space: nowrap;
-    cursor: pointer; transition: opacity .3s;
-    animation: hint-bob 2.4s ease-in-out infinite;
-  }
-  .hint::before {                                   /* 행성 쪽을 가리키는 꼬리 */
-    content: ""; position: absolute; left: -5px; top: 50%;
-    width: 8px; height: 8px; margin-top: -4px;
-    background: var(--bg); border-left: 1px solid var(--ink); border-bottom: 1px solid var(--ink);
-    transform: rotate(45deg);
-  }
-  .hint.gone { opacity: 0; pointer-events: none; }
-  @keyframes hint-bob { 0%, 100% { margin-left: 0; } 50% { margin-left: 3px; } }
-  @media (prefers-reduced-motion: reduce) { .hint { animation: none; } }
+  .stage .touch { fill: var(--ink); font: 400 8px var(--mono); letter-spacing: .12em; }
+
   .cap b { display: block; font-weight: 600; font-size: 12px; margin-bottom: 2px; }
   .cap span { color: var(--muted); font-size: 11.5px; }
   .stage .star-small { fill: none; stroke: var(--accent); stroke-width: 1; stroke-linejoin: miter; }
