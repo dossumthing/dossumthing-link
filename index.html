@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>dossumthing</title>
+<meta name="description" content="'나'라는 행성을 중심으로 나만의 궤도를 찾고 확장하는 기록, 두썸띵">
+<meta property="og:title" content="dossumthing · My recording Orbit">
+<meta property="og:description" content="'나'라는 행성을 중심으로 나만의 궤도를 찾고 확장하는 기록">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://dossumthing.com/">
+<meta property="og:image" content="https://dossumthing.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://dossumthing.com/">
+<meta name="theme-color" content="#EAEAEA">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=Poppins:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-subset.min.css" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EAEAEA;        /* 두썸띵 라이트 그레이 */
+    --ink: #231815;       /* 로고 블랙 */
+    --muted: #7d7875;
+    --line: #b9b5b2;
+    --accent: #F04E2A;    /* 주홍빛 다홍 (B안 확정) */
+    --en: "Poppins", "Pretendard", sans-serif;
+    --ko: "Pretendard", "Poppins", -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background-color: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .14 0 0 0 0 .09 0 0 0 0 .08 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+    color: var(--ink);
+    font-family: var(--ko);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  main {
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 44px 16px 32px;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 머리 */
+  header { text-align: center; }
+  .logo { display: block; width: 132px; height: auto; margin: 0 auto 10px; }
+  h1 {
+    margin: 0;
+    font-family: var(--en);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .lede {
+    margin: 12px 0 0;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+
+  /* 궤도 맵 (나선) */
+  .orbit { margin: 18px -16px 0; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .orbit.dragging { cursor: grabbing; }
+  .orbit svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .orbit .g-line { fill: none; stroke: var(--ink); stroke-width: .8; opacity: .7; }
+  .orbit .helix { fill: none; stroke: var(--ink); stroke-width: 1; }
+  .orbit .helix.back { opacity: .4; }
+  .orbit .chev { fill: none; stroke: var(--ink); stroke-width: 1; stroke-linejoin: miter; }
+  .orbit .chev.back { opacity: .4; }
+  .orbit .v-axis { fill: none; stroke: var(--ink); stroke-width: .9; }
+  .orbit .tick { fill: none; stroke: var(--ink); stroke-width: .8; opacity: .6; }
+  .orbit .shadow { fill: var(--ink); opacity: .07; }
+  .orbit .planet { fill: var(--ink); }
+  .orbit .planet-t { fill: var(--bg); font: 400 11px var(--en); text-anchor: middle; dominant-baseline: central; }
+  .orbit .node { fill: var(--ink); }
+  .orbit .lab-en { fill: var(--ink); font: 400 11px var(--mono); letter-spacing: .02em; }
+  .orbit .lab-ko { fill: var(--ink); font: 400 12px var(--ko); }
+  .orbit .sat { fill: var(--accent); }
+  .orbit .sat-trail { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; opacity: .45; }
+
+  /* 링크 */
+  nav { margin-top: 20px; }
+  nav ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
+  nav li { border-bottom: 1px solid var(--line); }
+  nav li:last-child { border-bottom-color: var(--ink); }
+  nav a {
+    display: grid;
+    grid-template-columns: 18px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 17px 4px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  nav .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    border: 1px solid var(--ink);
+    justify-self: center;
+    transition: background-color .2s, border-color .2s, transform .2s;
+  }
+  nav .name { font-size: 16px; font-weight: 500; }
+  nav .where { font: 400 12px var(--mono); color: var(--muted); }
+  nav a:hover .dot, nav a:focus-visible .dot { background: var(--accent); border-color: var(--accent); transform: scale(1.25); }
+  nav li.main .dot { background: var(--accent); border-color: var(--accent); }
+  nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  footer {
+    margin-top: auto;
+    padding-top: 36px;
+    text-align: center;
+    font: 400 11px var(--mono);
+    color: var(--muted);
+  }
+
+  @media (min-width: 720px) {
+    main { padding-top: 64px; }
+    h1 { font-size: 34px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img class="logo" src="logo.svg" alt="dossumthing" width="760" height="170">
+    <h1>My recording Orbit</h1>
+    <p class="lede">‘나’라는 행성을 중심으로<br>나만의 궤도를 찾고 확장하는 기록</p>
+  </header>
+
+  <figure class="orbit" id="orbit-fig" aria-label="My planet을 중심으로 바닥에 Input, Grow, Output, Care 네 축이 있고, 기록의 궤도가 그 둘레를 반시계로 돌며 한 바퀴마다 조금씩 위로 올라가는 나선. 첫 바퀴에는 목표/설계, 실행/변화/성장, 생각 정리/셀프 리뷰/피드백, 기억/배움 지점이 있다.">
+    <svg id="orbit" viewBox="0 54 460 476" aria-hidden="true"></svg>
+  </figure>
+
+  <nav aria-label="두썸띵 링크">
+    <ul>
+      <li class="main"><a href="https://smartstore.naver.com/dossumthing" data-link="store"><span class="dot"></span><span class="name">스마트스토어</span><span class="where">Shop</span></a></li>
+      <li><a href="https://blog.naver.com/dossumthing_blog" data-link="blog"><span class="dot"></span><span class="name">블로그</span><span class="where">Records</span></a></li>
+      <li><a href="https://www.instagram.com/dossumthing/" data-link="instagram"><span class="dot"></span><span class="name">인스타그램</span><span class="where">@dossumthing</span></a></li>
+    </ul>
+  </nav>
+
+  <footer>© dossumthing</footer>
+</main>
+<script src="orbit.js"></script>
+</body>
+</html>
