@@ -15,7 +15,7 @@
 
   // 궤도: 반지름(rx, ry), 기울기(rot)
   var orbits = [
-    { rx: 150, ry: 282, rot: 9 },     // 세로로 긴 궤도
+    { rx: 150, ry: 282, rot: -27 },     // 세로로 긴 궤도
     { rx: 278, ry: 150, rot: -51 }     // 비스듬히 누운 궤도
   ];
   orbits.forEach(function (o) {
@@ -37,6 +37,7 @@
   var defs = el('defs', {}, svg);
   var gLines = el('g', {}, svg);
   var gLabels = el('g', {}, svg);
+  var gDeco = el('g', { 'class': 'deco' }, svg);
   var gStars = el('g', {}, svg);
 
   // 두 궤도가 엇갈리는 자리: 먼 쪽 궤도 선을 살짝 끊어 앞뒤를 보여 준다
@@ -101,8 +102,9 @@
   (function () {
     var a = orbits[0], b = orbits[1];
     var top = at(a, -Math.PI / 2), bot = at(a, Math.PI / 2);
-    label('output', top.x - 4, top.y - 10);
-    label('input', bot.x + 4, bot.y + 20);
+    var vx = -a.s, vy = a.c;                           // 세로 궤도의 긴 축 방향(아래쪽)
+    label('output', top.x - vx * 12, top.y - vy * 12, 'end');
+    label('input', bot.x + vx * 12, bot.y + vy * 12 + 9, 'start');
     var g = at(b, 0), c = at(b, Math.PI);
     var ux = b.c, uy = b.s;                            // 누운 궤도의 긴 축 방향
     label('grow', g.x + ux * 10, g.y + uy * 10, 'start');
@@ -146,6 +148,40 @@
     return s.base * (1 + s.amp * Math.sin(clock * TAU / s.per + s.ph));
   }
 
+  // 사분면 네 자리: 글 대신 작은 행성·별 (마우스를 올리면 원래 문구)
+  var decos = [
+    { x: 268, y: 22, q: '실행 / 변화 / 성장', kind: 'ring' },              // Output–Grow
+    { x: 436, y: 392, q: '목표 / 설계', kind: 'spark' },                   // Grow–Input
+    { x: 196, y: 590, q: '기억 / 배움', kind: 'moon' },                    // Input–Care
+    { x: 22, y: 214, q: '생각 정리 · 셀프 리뷰 / 피드백', kind: 'phase' }  // Care–Output
+  ].map(function (d, i) {
+    var g = el('g', {}, gDeco);
+    el('title', {}, g).textContent = d.q;
+    if (d.kind === 'ring') {
+      el('path', { d: 'M-13 1.5 A13 4 -14 0 0 13 -1.5', 'class': 'deco-line' }, g);   // 뒤쪽 고리는 행성에 가려짐
+      el('circle', { r: 6.5, 'class': 'deco-fill' }, g);
+      el('path', { d: 'M-13 1.5 A13 4 -14 0 1 13 -1.5', 'class': 'deco-line' }, g);
+    } else if (d.kind === 'spark') {
+      el('path', { d: starPath(8, 1.8, 4), 'class': 'deco-line' }, g);
+    } else if (d.kind === 'moon') {
+      el('circle', { r: 5.5, 'class': 'deco-fill' }, g);
+      el('circle', { cx: 10, cy: -6, r: 1.8, 'class': 'deco-fill' }, g);
+      el('circle', { r: 11.6, 'class': 'deco-line', 'stroke-dasharray': '1.5 3' }, g);
+    } else {
+      el('circle', { r: 6.5, 'class': 'deco-line' }, g);
+      el('path', { d: 'M0 -6.5 A6.5 6.5 0 0 1 0 6.5 Z', 'class': 'deco-fill' }, g);
+    }
+    d.g = g; d.ph = i * 1.7;
+    return d;
+  });
+  function float(clock) {
+    decos.forEach(function (d) {
+      var dy = Math.sin(clock * TAU / 7 + d.ph) * 2.4;
+      d.g.setAttribute('transform', 'translate(' + d.x + ' ' + f1(d.y + dy) + ')');
+    });
+  }
+  float(0);
+
   if (reduce) { sats.forEach(place); return; }
 
   var last = null, clock = 0;
@@ -154,6 +190,7 @@
     var dt = Math.min(0.05, (now - last) / 1000);
     last = now; clock += dt;
     sats.forEach(function (s) { s.t -= speed(s, clock) * dt; place(s); });   // 반시계
+    float(clock);
     requestAnimationFrame(frame);
   }
   sats.forEach(place);
