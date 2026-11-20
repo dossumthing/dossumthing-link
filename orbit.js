@@ -15,7 +15,7 @@
 
   // 궤도: 반지름(rx, ry), 기울기(rot)
   var orbits = [
-    { rx: 150, ry: 282, rot: -27 },     // 세로로 긴 궤도
+    { rx: 150, ry: 282, rot: -33 },     // 세로로 긴 궤도
     { rx: 278, ry: 150, rot: -51 }     // 비스듬히 누운 궤도
   ];
   orbits.forEach(function (o) {
@@ -149,35 +149,57 @@
   }
 
   // 사분면 네 자리: 글 대신 작은 행성·별 (마우스를 올리면 원래 문구)
+  // 각자 작은 원을 그리며 떠다니고, 모양마다 따로 움직인다.
   var decos = [
-    { x: 268, y: 22, q: '실행 / 변화 / 성장', kind: 'ring' },              // Output–Grow
-    { x: 436, y: 392, q: '목표 / 설계', kind: 'spark' },                   // Grow–Input
-    { x: 196, y: 590, q: '기억 / 배움', kind: 'moon' },                    // Input–Care
-    { x: 22, y: 214, q: '생각 정리 · 셀프 리뷰 / 피드백', kind: 'phase' }  // Care–Output
+    { x: 268, y: 24, q: '실행 / 변화 / 성장', kind: 'ring' },              // Output–Grow
+    { x: 434, y: 392, q: '목표 / 설계', kind: 'spark' },                   // Grow–Input
+    { x: 196, y: 588, q: '기억 / 배움', kind: 'moon' },                    // Input–Care
+    { x: 24, y: 214, q: '생각 정리 · 셀프 리뷰 / 피드백', kind: 'phase' }  // Care–Output
   ].map(function (d, i) {
     var g = el('g', {}, gDeco);
     el('title', {}, g).textContent = d.q;
+    el('circle', { r: 16, fill: 'transparent' }, g);                     // 마우스 올리기 쉽게
+    var inner = el('g', {}, g);
     if (d.kind === 'ring') {
-      el('path', { d: 'M-13 1.5 A13 4 -14 0 0 13 -1.5', 'class': 'deco-line' }, g);   // 뒤쪽 고리는 행성에 가려짐
-      el('circle', { r: 6.5, 'class': 'deco-fill' }, g);
-      el('path', { d: 'M-13 1.5 A13 4 -14 0 1 13 -1.5', 'class': 'deco-line' }, g);
+      el('path', { d: 'M-13 1.5 A13 4 -14 0 0 13 -1.5', 'class': 'deco-line' }, inner);   // 뒤쪽 고리
+      el('circle', { r: 6.5, 'class': 'deco-fill' }, inner);
+      el('path', { d: 'M-13 1.5 A13 4 -14 0 1 13 -1.5', 'class': 'deco-line' }, inner);   // 앞쪽 고리
     } else if (d.kind === 'spark') {
-      el('path', { d: starPath(8, 1.8, 4), 'class': 'deco-line' }, g);
+      el('path', { d: starPath(8, 1.8, 4), 'class': 'deco-line' }, inner);
     } else if (d.kind === 'moon') {
-      el('circle', { r: 5.5, 'class': 'deco-fill' }, g);
-      el('circle', { cx: 10, cy: -6, r: 1.8, 'class': 'deco-fill' }, g);
-      el('circle', { r: 11.6, 'class': 'deco-line', 'stroke-dasharray': '1.5 3' }, g);
+      el('circle', { r: 11.6, 'class': 'deco-line', 'stroke-dasharray': '1.5 3' }, inner);
+      el('circle', { r: 5.5, 'class': 'deco-fill' }, inner);
+      d.moon = el('circle', { r: 1.9, 'class': 'deco-fill' }, inner);
     } else {
-      el('circle', { r: 6.5, 'class': 'deco-line' }, g);
-      el('path', { d: 'M0 -6.5 A6.5 6.5 0 0 1 0 6.5 Z', 'class': 'deco-fill' }, g);
+      el('circle', { r: 6.5, 'class': 'deco-line' }, inner);
+      d.shade = el('path', { 'class': 'deco-fill' }, inner);
     }
-    d.g = g; d.ph = i * 1.7;
+    d.g = g; d.inner = inner; d.ph = i * 1.7;
     return d;
   });
+  function phasePath(f) {                    // f: 0→1→0 차오름. 오른쪽부터 차는 달 모양
+    var r = 6.5, k = Math.cos(f * Math.PI) * r;   // 경계선 타원의 가로 반지름(부호 = 방향)
+    return 'M0 ' + (-r) + ' A' + r + ' ' + r + ' 0 0 1 0 ' + r +
+      ' A' + f1(Math.abs(k)) + ' ' + r + ' 0 0 ' + (k > 0 ? 0 : 1) + ' 0 ' + (-r) + 'Z';
+  }
   function float(clock) {
     decos.forEach(function (d) {
-      var dy = Math.sin(clock * TAU / 7 + d.ph) * 2.4;
-      d.g.setAttribute('transform', 'translate(' + d.x + ' ' + f1(d.y + dy) + ')');
+      var w = clock * TAU / 9 + d.ph;                                   // 작은 원을 그리며 떠다님
+      var x = d.x + Math.cos(w) * 4, y = d.y + Math.sin(w * 1.3) * 5;
+      d.g.setAttribute('transform', 'translate(' + f1(x) + ' ' + f1(y) + ')');
+      if (d.kind === 'ring') {                                          // 고리 행성: 천천히 기울었다 돌아옴
+        d.inner.setAttribute('transform', 'rotate(' + f1(Math.sin(clock * TAU / 6 + d.ph) * 16) + ')');
+      } else if (d.kind === 'spark') {                                  // 별: 천천히 돌며 반짝
+        var sc = 0.85 + 0.25 * (0.5 + 0.5 * Math.sin(clock * TAU / 2.6));
+        d.inner.setAttribute('transform', 'rotate(' + f1(clock * 24 % 360) + ') scale(' + sc.toFixed(3) + ')');
+      } else if (d.kind === 'moon') {                                   // 작은 달이 점선 궤도를 돈다
+        var m = -clock * TAU / 5;
+        d.moon.setAttribute('cx', f1(Math.cos(m) * 11.6));
+        d.moon.setAttribute('cy', f1(Math.sin(m) * 11.6));
+      } else {                                                          // 반쯤 찬 행성: 차고 기운다
+        var f = 0.5 + 0.42 * Math.sin(clock * TAU / 10);
+        d.shade.setAttribute('d', phasePath(f));
+      }
     });
   }
   float(0);
