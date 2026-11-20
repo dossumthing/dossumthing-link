@@ -215,7 +215,7 @@
   cap.setAttribute('role', 'status');
   cap.innerHTML = '<b></b><span></span>';
   stage.appendChild(cap);
-  function hideCap() { cap.classList.remove('show'); capFor = null; }
+  function hideCap() { cap.classList.remove('show'); capFor = null; if (hint) hint.classList.remove('gone'); }
   function showCap(d) {
     dropHint();
     if (capFor === d && cap.classList.contains('show')) { hideCap(); return; }
@@ -234,11 +234,9 @@
   }
   document.addEventListener('click', hideCap);
 
-  // 처음 온 사람에게: 고리 행성 옆에 '행성을 눌러보세요' 말풍선 하나. 한 번 누르면 사라진다.
-  var seen = false;
-  try { seen = localStorage.getItem('orbit-hint') === '1'; } catch (e) {}
+  // 고리 행성 옆에 '행성을 눌러보세요' 말풍선을 늘 띄워 둔다. 설명 상자가 열려 있는 동안만 잠깐 숨는다.
   var hint = null;
-  if (!seen) {
+  {
     var hd = decos[0];
     hint = document.createElement('div');
     hint.className = 'hint';
@@ -248,13 +246,7 @@
     stage.appendChild(hint);
     hint.addEventListener('click', function (ev) { ev.stopPropagation(); showCap(hd); });
   }
-  function dropHint() {
-    if (!hint) return;
-    hint.classList.add('gone');
-    var h = hint; hint = null;
-    setTimeout(function () { if (h.parentNode) h.parentNode.removeChild(h); }, 300);
-    try { localStorage.setItem('orbit-hint', '1'); } catch (e) {}
-  }
+  function dropHint() { if (hint) hint.classList.add('gone'); }
 
   if (reduce) { sats.forEach(place); return; }
 
