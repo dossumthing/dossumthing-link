@@ -15,8 +15,8 @@
 
   // 궤도: 반지름(rx, ry), 기울기(rot)
   var orbits = [
-    { rx: 165, ry: 310, rot: -33 },    // output–input
-    { rx: 250, ry: 135, rot: -51 }     // 비스듬히 누운 궤도
+    { rx: 140, ry: 310, rot: -33 },    // output–input (폭 좁게)
+    { rx: 250, ry: 149, rot: -51 }     // 비스듬히 누운 궤도
   ];
   orbits.forEach(function (o) {
     o.c = Math.cos(o.rot * DEG); o.s = Math.sin(o.rot * DEG);
@@ -152,13 +152,13 @@
   // 사분면 네 자리: 글 대신 작은 행성·별 (마우스를 올리면 원래 문구)
   // 각자 작은 원을 그리며 떠다니고, 모양마다 따로 움직인다.
   var decos = [
-    { x: 262, y: 20, q: '실행 / 변화 / 성장', kind: 'ring' },              // Output–Grow (위)
-    { x: 444, y: 270, q: '목표 / 설계', kind: 'pen' },                     // Grow–Input (오른쪽 바깥)
-    { x: 214, y: 590, q: '기억 / 배움', kind: 'note' },                    // Input–Care (아래)
-    { x: 18, y: 342, q: '생각 정리 · 셀프 리뷰 / 피드백', kind: 'star5' }  // Care–Output (왼쪽 바깥)
+    { x: 262, y: 20, q: '실행 / 변화 / 성장', t: '기록한 것을 해 보고, 달라진 나를 확인해요', kind: 'ring' },              // Output–Grow (위)
+    { x: 444, y: 270, q: '목표 / 설계', t: '가고 싶은 방향을 정하고 궤도를 그려요', kind: 'pen' },                     // Grow–Input (오른쪽 바깥)
+    { x: 214, y: 590, q: '기억 / 배움', t: '지나간 하루를 적어 두고 배운 것을 남겨요', kind: 'note' },                    // Input–Care (아래)
+    { x: 18, y: 342, q: '생각 정리 · 셀프 리뷰 / 피드백', t: '돌아보며 생각을 정리하고 다음을 고쳐요', kind: 'star5' }  // Care–Output (왼쪽 바깥)
   ].map(function (d, i) {
     var g = el('g', {}, gDeco);
-    el('title', {}, g).textContent = d.q;
+    g.addEventListener('click', function (ev) { ev.stopPropagation(); showCap(d); });
     el('circle', { r: 18, fill: 'transparent' }, g);                     // 마우스 올리기 쉽게
     var inner = el('g', {}, g);
     if (d.kind === 'ring') {
@@ -208,6 +208,30 @@
     });
   }
   float(0);
+
+  // 누르면 한 줄 설명 (한 번에 하나, 몇 초 뒤 사라짐)
+  var stage = svg.parentNode, cap = document.createElement('div'), capTimer, capFor = null;
+  cap.className = 'cap';
+  cap.setAttribute('role', 'status');
+  cap.innerHTML = '<b></b><span></span>';
+  stage.appendChild(cap);
+  function hideCap() { cap.classList.remove('show'); capFor = null; }
+  function showCap(d) {
+    if (capFor === d && cap.classList.contains('show')) { hideCap(); return; }
+    capFor = d;
+    cap.firstChild.textContent = d.q;
+    cap.lastChild.textContent = d.t;
+    var right = d.x > CX, below = d.y < CY;
+    cap.style.left = (d.x / 460 * 100) + '%';
+    cap.style.top = (d.y / 600 * 100) + '%';
+    cap.style.textAlign = d.x < 60 ? 'left' : d.x > 400 ? 'right' : 'center';
+    var tx = d.x < 60 ? '-12px' : d.x > 400 ? 'calc(-100% + 12px)' : '-50%';
+    var ty = below ? '26px' : 'calc(-100% - 26px)';
+    cap.style.transform = 'translate(' + tx + ', ' + ty + ')';
+    cap.classList.add('show');
+    clearTimeout(capTimer); capTimer = setTimeout(hideCap, 4500);
+  }
+  document.addEventListener('click', hideCap);
 
   if (reduce) { sats.forEach(place); return; }
 
