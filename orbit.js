@@ -152,10 +152,10 @@
   // 사분면 네 자리: 글 대신 작은 행성·별 (마우스를 올리면 원래 문구)
   // 각자 작은 원을 그리며 떠다니고, 모양마다 따로 움직인다.
   var decos = [
-    { x: 262, y: 20, q: '실행 / 변화 / 성장', t: '기록한 것을 해 보고, 달라진 나를 확인해요', kind: 'ring' },              // Output–Grow (위)
-    { x: 444, y: 270, q: '목표 / 설계', t: '가고 싶은 방향을 정하고 궤도를 그려요', kind: 'pen' },                     // Grow–Input (오른쪽 바깥)
-    { x: 214, y: 590, q: '기억 / 배움', t: '지나간 하루를 적어 두고 배운 것을 남겨요', kind: 'note' },                    // Input–Care (아래)
-    { x: 18, y: 342, q: '생각 정리 · 셀프 리뷰 / 피드백', t: '돌아보며 생각을 정리하고 다음을 고쳐요', kind: 'star5' }  // Care–Output (왼쪽 바깥)
+    { x: 262, y: 20, q: '실행 / 변화 / 성장', t: '다짐한 일/갖고 싶은 습관 등, 실행하고 기록하며 변화하기', kind: 'ring' },              // Output–Grow (위)
+    { x: 444, y: 270, q: '목표 / 설계', t: '해야 할 일/공부/업무/프로젝트 등, 계획하고 Follow-up 하기', kind: 'pen' },                     // Grow–Input (오른쪽 바깥)
+    { x: 214, y: 590, q: '기억 / 배움', t: '기억하고 싶은/나를 위로하는/나를 성장하게 하는 것들을 수집하고 기억하고 배우기', kind: 'note' },                    // Input–Care (아래)
+    { x: 18, y: 342, q: '생각 정리 · 셀프 리뷰 / 피드백', t: '일상/생각/고민/아이디어를 쓰고 정리하며 표출하기', kind: 'star5' }  // Care–Output (왼쪽 바깥)
   ].map(function (d, i) {
     var g = el('g', {}, gDeco);
     g.addEventListener('click', function (ev) { ev.stopPropagation(); showCap(d); });
@@ -217,6 +217,7 @@
   stage.appendChild(cap);
   function hideCap() { cap.classList.remove('show'); capFor = null; }
   function showCap(d) {
+    dropHint();
     if (capFor === d && cap.classList.contains('show')) { hideCap(); return; }
     capFor = d;
     cap.firstChild.textContent = d.q;
@@ -232,6 +233,28 @@
     clearTimeout(capTimer); capTimer = setTimeout(hideCap, 4500);
   }
   document.addEventListener('click', hideCap);
+
+  // 처음 온 사람에게: 고리 행성 옆에 '행성을 눌러보세요' 말풍선 하나. 한 번 누르면 사라진다.
+  var seen = false;
+  try { seen = localStorage.getItem('orbit-hint') === '1'; } catch (e) {}
+  var hint = null;
+  if (!seen) {
+    var hd = decos[0];
+    hint = document.createElement('div');
+    hint.className = 'hint';
+    hint.textContent = '행성을 눌러보세요';
+    hint.style.left = ((hd.x + 22) / 460 * 100) + '%';
+    hint.style.top = (hd.y / 600 * 100) + '%';
+    stage.appendChild(hint);
+    hint.addEventListener('click', function (ev) { ev.stopPropagation(); showCap(hd); });
+  }
+  function dropHint() {
+    if (!hint) return;
+    hint.classList.add('gone');
+    var h = hint; hint = null;
+    setTimeout(function () { if (h.parentNode) h.parentNode.removeChild(h); }, 300);
+    try { localStorage.setItem('orbit-hint', '1'); } catch (e) {}
+  }
 
   if (reduce) { sats.forEach(place); return; }
 
